@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import ErrorMessage from "./ErrorMessage";
 import { ethers } from "ethers";
+import Web3 from "web3";
 import Modal from "react-modal";
+import tokenABI from "./abi";
 
 import "./App.css";
 const customStyles = {
@@ -69,30 +71,31 @@ const changeNetwork = async ({ networkName, setError }) => {
     setError(err.message);
   }
 };
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(
+    "https://data-seed-prebsc-1-s1.binance.org:8545/"
+  )
+);
 
 function App() {
   // usetstate for storing and retrieving wallet details
   const [data, setdata] = useState({
     address: "",
-    Balance: null,
+    balance: null,
   });
+  const [walletAdress, setWalletAdress] = useState("");
+  const [balance, setBalance] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
+  const [swtBalance, setSwtBalance] = useState("");
 
   // Button handler button for handling a
   // request event for metamask
   const btnhandler = async () => {
-    const account = await window.ethereum?.request({
-      method: "eth_requestAccounts",
-    });
-    console.log("account: ", account);
-    // Asking if metamask is already present or not
-    if (window.ethereum) {
-      // res[0] for fetching a first wallet
-      window.ethereum
-        ?.request({ method: "eth_requestAccounts" })
-        .then((res) => accountChangeHandler(res[0]));
-    } else {
-      alert("Установите метамаск!!");
-    }
+    setIsOpen(true);
+    // res[0] for fetching a first wallet
+    window.ethereum
+      ?.request({ method: "eth_requestAccounts" })
+      .then((res) => accountChangeHandler(res[0]));
   };
 
   // getbalance function for getting a balance in
@@ -148,10 +151,6 @@ function App() {
   let subtitle;
   const [modalIsOpen, setIsOpen] = React.useState(false);
 
-  function openModal() {
-    setIsOpen(true);
-  }
-
   function afterOpenModal() {
     // references are now sync'd and can be accessed.
   }
@@ -171,6 +170,91 @@ function App() {
       });
     }
   });
+
+  useEffect(() => {
+    if (window.ethereum) {
+      // res[0] for fetching a first wallet
+      window.ethereum
+        ?.request({ method: "eth_requestAccounts" })
+        .then((res) => setWalletAdress(res[0]));
+    } else {
+      alert("Установите метамаск!!");
+    }
+  }, []);
+
+  const pullbalance = async () => {
+    if (walletAdress) {
+      const balance = await web3.eth.getBalance(walletAdress);
+      setBalance(web3.utils.fromWei(balance, "ether"));
+    }
+
+    const token = await web3.eth.getBalance(
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A"
+    );
+    setContractAddress(token);
+
+    const currentChainId = await window.ethereum.request({
+      method: "net_version",
+    });
+
+    const contract = new web3.eth.Contract(
+      tokenABI,
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A"
+    );
+    //0x1676a38Cd7f819859c21165cDa5663b39c73507A
+    const swt = await contract.methods
+      .balanceOf("0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36")
+      .call();
+    //0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36
+    setSwtBalance(web3.utils.fromWei(swt, "ether"));
+
+    console.log("pp", web3.currentProvider);
+  };
+
+  const approveBalance = async () => {
+    console.log("approve: ");
+    const MyContract = new web3.eth.Contract(
+      tokenABI,
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
+      {
+        from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36",
+      }
+    );
+    console.log("MyContract: ", MyContract);
+
+    const holder = "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36";
+    // paymentAddress is where funds will be send to
+
+    web3.eth.sendTransaction(
+      {
+        from: holder,
+        to: "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
+        value: "1000000000000000000",
+        chainId: "97",
+      },
+      function (err, transactionHash) {
+        if (err) {
+          console.log("Payment failed", err);
+        } else {
+          console.log(transactionHash);
+        }
+      }
+    );
+    /*
+    const receipt = await MyContract.methods.approve(
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
+      "1000000000000000000"
+    );
+    console.log("receipt:", receipt);
+    receipt
+      .send({
+        from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36",
+        gas: 1000000,
+      })
+      .catch((err) => console.log("err: ", err));
+    console.log("Transaction Hash: " + receipt.transactionHash);
+    */
+  };
 
   return (
     <div className="credit-card w-full lg:w-1/2 sm:w-auto shadow-lg mx-auto rounded-xl bg-white">
@@ -193,7 +277,14 @@ function App() {
           </button>
           <ErrorMessage message={error} />
           <button onClick={btnhandler}>Open Modal</button>
-
+          <button onClick={pullbalance}>Get Balance</button>
+          <button onClick={approveBalance}>Approve</button>
+          <p>
+            in {walletAdress} your balance BNB is: {balance}
+          </p>
+          <p>
+            in {walletAdress} your balance SWT is: {swtBalance}
+          </p>
           <Modal
             ariaHideApp={false}
             isOpen={modalIsOpen}
