@@ -12,7 +12,8 @@
     "react-modal": "^3.16.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.0",
-    "web3": "^4.1.1"
+    "web3": "^4.1.1",
+    "web3modal": "^1.9.12"
   },
   "scripts": {
     "start": "react-scripts start",

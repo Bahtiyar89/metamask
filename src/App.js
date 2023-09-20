@@ -222,12 +222,9 @@ function App() {
     );
     console.log("MyContract: ", MyContract);
 
-    const holder = "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36";
-    // paymentAddress is where funds will be send to
-
     web3.eth.sendTransaction(
       {
-        from: holder,
+        from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36",
         to: "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
         value: "1000000000000000000",
         chainId: "97",
@@ -256,6 +253,36 @@ function App() {
     */
   };
 
+  const pay = async () => {
+    const contract = new web3.eth.Contract(
+      tokenABI,
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A"
+    );
+    const transfer = await contract.methods.transfer(
+      "0xBaF3c4193858876da914F702Ea97491021269d0C",
+      10
+    );
+    console.log("transfer: ", transfer);
+
+    const encodedABI = await transfer.encodeABI();
+    console.log("encodedABI:", encodedABI);
+    window.ethereum
+      .request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36",
+            to: "0xBaF3c4193858876da914F702Ea97491021269d0C",
+            value: "10",
+            data: encodedABI,
+          },
+        ],
+      })
+      .then((txHash) => console.log(txHash))
+      .catch((error) => console.error);
+  };
+
+  console.log("window.ethereum.chainId ", window.ethereum.chainId);
   return (
     <div className="credit-card w-full lg:w-1/2 sm:w-auto shadow-lg mx-auto rounded-xl bg-white">
       <main className="mt-4 p-4">
@@ -279,6 +306,12 @@ function App() {
           <button onClick={btnhandler}>Open Modal</button>
           <button onClick={pullbalance}>Get Balance</button>
           <button onClick={approveBalance}>Approve</button>
+          <button
+            onClick={pay}
+            className="mt-2 mb-2 bg-warning border-warning btn submit-button focus:ring focus:outline-none w-full"
+          >
+            Pay
+          </button>
           <p>
             in {walletAdress} your balance BNB is: {balance}
           </p>
