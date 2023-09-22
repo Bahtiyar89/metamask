@@ -183,6 +183,7 @@ function App() {
   }, []);
 
   const pullbalance = async () => {
+    //decimals
     if (walletAdress) {
       const balance = await web3.eth.getBalance(walletAdress);
       setBalance(web3.utils.fromWei(balance, "ether"));
@@ -256,7 +257,8 @@ function App() {
   const pay = async () => {
     const contract = new web3.eth.Contract(
       tokenABI,
-      "0x1676a38Cd7f819859c21165cDa5663b39c73507A"
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
+      { from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36" }
     );
     const transfer = await contract.methods.transfer(
       "0xBaF3c4193858876da914F702Ea97491021269d0C",
@@ -274,7 +276,10 @@ function App() {
             from: "0x5A3eEf47D739F3543F8B78fcD8290EBE06358E36",
             to: "0xBaF3c4193858876da914F702Ea97491021269d0C",
             value: "10",
-            data: encodedABI,
+            data: contract.methods
+              .transfer("0xBaF3c4193858876da914F702Ea97491021269d0C", 10)
+              .encodeABI(),
+            nonce: web3.utils.toHex(10),
           },
         ],
       })
@@ -282,6 +287,23 @@ function App() {
       .catch((error) => console.error);
   };
 
+  const swtPay = async () => {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    //web3.eth.decimals()
+    const signer = provider.getSigner();
+    console.log("sss:", signer);
+    const token = new ethers.Contract(
+      "0x1676a38Cd7f819859c21165cDa5663b39c73507A",
+      tokenABI,
+      signer
+    );
+
+    await token.approve(
+      "0xBaF3c4193858876da914F702Ea97491021269d0C",
+      100000000000000
+    );
+    console.log("token: ", token);
+  };
   console.log("window.ethereum.chainId ", window.ethereum.chainId);
   return (
     <div className="credit-card w-full lg:w-1/2 sm:w-auto shadow-lg mx-auto rounded-xl bg-white">
@@ -312,6 +334,7 @@ function App() {
           >
             Pay
           </button>
+          <button onClick={swtPay}>SWTPay</button>
           <p>
             in {walletAdress} your balance BNB is: {balance}
           </p>
